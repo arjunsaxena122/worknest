@@ -1,16 +1,18 @@
+import Mailgen from "mailgen";
+import nodemailer from "nodemailer";
 import { env } from "../config/config.js";
 
-const sendCustomMail = async (options) => {
+export const sendCustomMail = async (options) => {
   const mailGenerator = new Mailgen({
     theme: "default",
     product: {
       name: "Task Manager",
-      link: "https://mailgen.js/",
+      link: "http://locahost:3000",
     },
   });
 
   const htmlEmail = mailGenerator.generate(options.mailGen);
-  const plainTextEmail = mailGenerator.generatePlainText(options.mailGen);
+  const plainTextEmail = mailGenerator.generatePlaintext(options.mailGen);
 
   const transporter = nodemailer.createTransport({
     host: env.mailtrap_host,
@@ -31,7 +33,7 @@ const sendCustomMail = async (options) => {
   });
 };
 
-const emailVerificationCustomMail = (username, verificationUrl) => {
+export const emailVerificationCustomMail = (username, verificationUrl) => {
   return {
     body: {
       name: username,
@@ -41,6 +43,25 @@ const emailVerificationCustomMail = (username, verificationUrl) => {
         button: {
           color: "#22BC66", // Optional action button color
           text: "Verify your account",
+          link: verificationUrl,
+        },
+      },
+      outro:
+        "Need help, or have questions? Just reply to this email, we'd love to help.",
+    },
+  };
+};
+
+export const forgetPasswordCustomMail = (username, verificationUrl) => {
+  return {
+    body: {
+      name: username,
+      intro: "Welcome to my website! We're very excited to have you on board.",
+      action: {
+        instructions: "To get started with website, please click here:",
+        button: {
+          color: "#22BC66", // Optional action button color
+          text: "Reset your password",
           link: verificationUrl,
         },
       },

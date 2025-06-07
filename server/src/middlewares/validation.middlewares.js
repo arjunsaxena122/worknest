@@ -10,7 +10,7 @@ const validator = (req, res, next) => {
 
   errors.array().map((err) => extractedError.push(err));
 
-  throw new ApiError(400, "Invalidation in register user", extractedError);
+  throw new ApiError(400, "Invalidation validator", extractedError);
 };
 
 export { validator };

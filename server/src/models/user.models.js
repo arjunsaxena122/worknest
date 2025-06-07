@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { env } from "../config/config";
+import { env } from "../config/config.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -14,21 +14,19 @@ const userSchema = new mongoose.Schema(
         url: `https://placehold.co/600x400`,
         localPath: "",
       },
+      _id: false,
     },
 
     username: {
       type: String,
       trim: true,
-      unique: true,
       lowercase: true,
-      required: true,
     },
 
     fullname: {
       type: String,
       trim: true,
       lowercase: true,
-      required: true,
     },
 
     email: {
@@ -63,7 +61,7 @@ const userSchema = new mongoose.Schema(
 
     forgotPasswordToken: {
       type: String,
-    },
+    }, 
 
     forgetPasswordExpiry: {
       type: Date,
@@ -74,8 +72,11 @@ const userSchema = new mongoose.Schema(
   },
 );
 
-userSchema.pre("save", async function () {
-  this.password = await bcrypt.hash(this.password, 10);
+userSchema.pre("save", async function (next) {
+  if (this.isModified("password")) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  next();
 });
 
 userSchema.methods.isCheckCorrectPassword = async function (password) {
