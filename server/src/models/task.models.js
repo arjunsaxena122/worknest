@@ -1,11 +1,12 @@
 import mongoose from "mongoose";
-import { AvailableTaskStatusEnum, TaskStatusEnum } from "../utils/constants";
+import { AvailableTaskStatusEnum, TaskStatusEnum } from "../utils/constants.js";
 
 const taskSchema = new mongoose.Schema(
   {
     title: {
       type: String,
       trim: true,
+      unique: true,
       required: true,
     },
     description: {
@@ -28,8 +29,9 @@ const taskSchema = new mongoose.Schema(
       required: true,
     },
     status: {
+      type: String,
       enum: AvailableTaskStatusEnum,
-      default: TaskStatusEnum.TODO,
+      default: TaskStatusEnum?.TODO,
     },
 
     attachments: {
