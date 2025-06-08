@@ -4,8 +4,9 @@ import { AvailableUserRoles, UserRolesEnum } from "../utils/constants.js";
 const projectMemberSchema = new Schema(
   {
     role: {
+      type: String,
       enum: AvailableUserRoles,
-      default: UserRolesEnum.MEMBER,
+      default: UserRolesEnum?.MEMBER,
     },
     project: {
       type: Schema.Types.ObjectId,
@@ -27,3 +28,4 @@ export const ProjectMember = mongoose.model(
   "ProjectMember",
   projectMemberSchema,
 );
+
