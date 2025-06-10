@@ -1,4 +1,6 @@
+import { Schema } from "mongoose";
 import { ProjectMember } from "../models/projectmember.models.js";
+import { SubTask } from "../models/subtask.models.js";
 import { Task } from "../models/task.models.js";
 import { AvailableTaskStatusEnum } from "../utils/constants.js";
 import { ApiError, ApiResponse, asyncHandler } from "../utils/index.js";
@@ -134,7 +136,126 @@ const getAllTask = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, "Task fetched successfully",getAllTask));
+    .json(new ApiResponse(200, "Task fetched successfully", getAllTask));
 });
 
-export { createTask, deleteTask, updateTask, getAllTask };
+const getTaskById = asyncHandler(async (req, res) => {
+  const { tid } = req.params;
+
+  if (!tid) {
+    throw new ApiError(400, "you don't give me task id");
+  }
+
+  const getTask = await Task.findById(tid);
+
+  if (!getTask) {
+    throw new ApiError(400, "Task not found");
+  }
+
+  return res.status(200).json(200, "task found successfully");
+});
+
+const createSubTask = asyncHandler(async (req, res) => {
+  const { title, isCompleted } = req.body;
+  const { tid } = req.params;
+
+  if (!title || !isCompleted) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  if (!tid) {
+    throw new ApiError(400, "you don't give me the tid");
+  }
+
+  const subTask = await SubTask.create({
+    title,
+    isCompleted,
+    task: Schema.Types.ObjectId(tid),
+    createdBy: req?.user?.id,
+  });
+
+  if (!subTask) {
+    throw new ApiError(
+      500,
+      "Internal server issue, Please create sub task again",
+    );
+  }
+
+  return res.status(201).json(201, "Subtask create successfully", subTask);
+});
+
+const delSubTask = asyncHandler(async (req, res) => {
+  const { tid } = req.params;
+
+  if (!tid) {
+    throw new ApiError(400, "you don't give me the task id");
+  }
+
+  const subTask = await SubTask.findOne({ task: tid });
+
+  if (!subTask) {
+    throw new ApiError(400, "sub task not exist");
+  }
+
+  return res.status(200).json(200, "sub task delete successfully", subTask);
+});
+
+const updateSubTask = asyncHandler(async (req, res) => {
+  const { title, isCompleted } = req.body;
+  const { tid } = req.params;
+
+  if (!title || !isCompleted) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  if (!tid) {
+    throw new ApiError(400, "you don't give me the tid");
+  }
+
+  const subTask = await SubTask.findByIdAndUpdate(
+    { task: tid },
+    {
+      $set: {
+        title,
+        isCompleted,
+      },
+    },
+    {
+      new: true,
+    },
+  );
+
+  if (!subTask) {
+    throw new ApiError(400, "sub task not be updated");
+  }
+
+  return res.status(200).json(200, "sub task updated Successfully", subTask);
+});
+
+const getSubTask = asyncHandler(async (req, res) => {
+  const { tid } = req.params;
+
+  if (!tid) {
+    throw new ApiError(400, "you don't give me the tid");
+  }
+
+  const subTask = await SubTask.findOne({ task: tid });
+
+  if (!subTask) {
+    throw new ApiError(400, "subtask not found");
+  }
+
+  return res.status(200).json(200, "get subtask successfully", subTask);
+});
+
+export {
+  createTask,
+  deleteTask,
+  updateTask,
+  getAllTask,
+  getTaskById,
+  createSubTask,
+  delSubTask,
+  updateSubTask,
+  getSubTask,
+};
