@@ -22,6 +22,10 @@ const createEnv = (processEnv) => {
     mailtrap_port: processEnv.MAILTRAP_PORT,
     mailtrap_auth_user: processEnv.MAILTRAP_AUTH_USER,
     mailtrap_auth_pass: processEnv.MAILTRAP_AUTH_PASS,
+    cloudinary_url: process.env.CLOUDINARY_URL,
+    publicKey : process.env.PUBLIC_KEY,
+    privateKey : process.env.PRIVATE_KEY,
+    urlEndpoint : process.env.URLENDPOINT
   };
 
   return processEnvObject;
