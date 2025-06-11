@@ -10,6 +10,9 @@ import { isGeneratingAccessAndRefreshToken } from "../utils/access-refresh-token
 import { env } from "../config/config.js";
 import crypto from "crypto";
 import { forgetPasswordCustomMail } from "../utils/mail.js";
+import ImageKit from "imagekit";
+import path from "path";
+import { uploadImageInImagekit } from "../utils/imagekit.io.js";
 
 const userRegister = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -215,7 +218,7 @@ const userResendVerifyEmail = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "resend email verification successfully", user));
 });
 
-//* Pending API 
+//* Pending API
 const userRefreshAccessToken = asyncHandler(async (req, res) => {});
 
 const userForgetPasswordRequest = asyncHandler(async (req, res) => {
@@ -332,6 +335,47 @@ const userGetMe = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "user detailed fetched successfully", user));
 });
 
+const userUploadAvatar = asyncHandler(async (req, res) => {
+  const getImage = req.file;
+
+  if (!getImage) {
+    throw new ApiError(400, "Image not found");
+  }
+
+  const rootPath = path.resolve(getImage.path);
+
+  const afterUploadImage = await uploadImageInImagekit(
+    rootPath,
+    req?.user?.id,
+    uploadImage.originalname,
+  );
+
+  if (!afterUploadImage) {
+    throw new ApiError(400, "Failed to upload image");
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    req?.user?.id,
+    {
+      $set: {
+        avatar: {
+          url: afterUploadImage?.url,
+          localPath: getImage.path,
+        },
+      },
+    },
+    { new: true },
+  );
+
+  if (!updatedUser) {
+    throw new ApiError(400, "Avatar not upload");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Avatar Upload successfully", updatedUser));
+});
+
 export {
   userRegister,
   userLogin,
@@ -343,4 +387,5 @@ export {
   userResetPassword,
   userChangePassword,
   userGetMe,
+  userUploadAvatar,
 };

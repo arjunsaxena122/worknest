@@ -10,10 +10,11 @@ import {
   updateTask,
 } from "../controllers/task.controllers.js";
 import { verifyAuthJwt } from "../middlewares/auth.middlewares.js";
+import { upload } from "../middlewares/multer.middlewares.js";
 
 const router = Router();
 
-router.route("/create-task/:pid").post(verifyAuthJwt, createTask);
+router.route("/create-task/:pid").post(verifyAuthJwt, upload.fields("attachment",4) , createTask);
 
 router.route("/delete-task/:tid").delete(verifyAuthJwt, deleteTask);
 

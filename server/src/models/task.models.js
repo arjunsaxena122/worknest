@@ -20,7 +20,7 @@ const taskSchema = new mongoose.Schema(
     },
     assignedTo: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "User", 
       required: true,
     },
     assignedBy: {
@@ -35,7 +35,7 @@ const taskSchema = new mongoose.Schema(
     },
 
     attachments: {
-      types: [
+      type: [
         {
           url: String,
           mimeType: String,

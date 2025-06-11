@@ -8,6 +8,7 @@ import {
   userRegister,
   userResendVerifyEmail,
   userResetPassword,
+  userUploadAvatar,
   userVerifyEmail,
 } from "../controllers/auth.controllers.js";
 import { validator } from "../middlewares/validation.middlewares.js";
@@ -17,6 +18,7 @@ import {
   userChangePasswordValidator,
 } from "../validators/auth/auth.validators.js";
 import { verifyAuthJwt } from "../middlewares/auth.middlewares.js";
+import { upload } from "../middlewares/multer.middlewares.js";
 
 const router = Router();
 
@@ -43,5 +45,8 @@ router.route("/forget-password").post(userForgetPasswordRequest);
 router.route("/reset-password/:resetId").post(userResetPassword);
 
 router.route("/get-me").get(verifyAuthJwt, userGetMe);
+router
+  .route("/upload-image")
+  .patch(verifyAuthJwt, upload.single("avatar"), userUploadAvatar);
 
 export default router;

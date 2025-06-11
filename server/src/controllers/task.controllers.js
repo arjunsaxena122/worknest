@@ -4,17 +4,17 @@ import { SubTask } from "../models/subtask.models.js";
 import { Task } from "../models/task.models.js";
 import { AvailableTaskStatusEnum } from "../utils/constants.js";
 import { ApiError, ApiResponse, asyncHandler } from "../utils/index.js";
+import { uploadImageInImagekit } from "../utils/imagekit.io.js";
+import path from "path";
 
 const createTask = asyncHandler(async (req, res) => {
-  // const {taskFile} = req.files
+  const taskAttachment = req.files;
   const { title, description, status } = req.body;
   const { pid } = req.params;
 
   if (!title || !description) {
     throw new ApiError(400, "Please fill all the required fields");
   }
-
-  console.log(AvailableTaskStatusEnum.includes(status));
 
   if (!AvailableTaskStatusEnum.includes(status)) {
     throw new ApiError(400, "this status doesn't exist");
@@ -28,7 +28,27 @@ const createTask = asyncHandler(async (req, res) => {
     throw new ApiError(400, "this project doesn't exist");
   }
 
-  console.log(projectMemberId._id);
+  const uploadAttachment = await uploadImageInImagekit(
+    path.resolve(taskAttachment.path),
+    req?.user?.id,
+    taskAttachment.originalname,
+  );
+
+  if (!uploadAttachment) {
+    throw new ApiError(400, "failed uploading image on imagekit");
+  }
+
+  const attachmentObj = {
+    url: uploadAttachment?.url,
+    mimeType: taskAttachment.mimetype,
+    size: taskAttachment.size,
+  };
+
+  console.log(attachmentObj);
+
+  if (!attachmentObj) {
+    throw new ApiError(400, "failed to make object of attachment");
+  }
 
   const task = await Task.create({
     title,
@@ -37,7 +57,7 @@ const createTask = asyncHandler(async (req, res) => {
     assignedTo: projectMemberId?._id ?? " ",
     assignedBy: req?.user?.id,
     status: status.toLowerCase(),
-    attachments: [],
+    attachments: [attachmentObj],
   });
 
   if (!task) {
