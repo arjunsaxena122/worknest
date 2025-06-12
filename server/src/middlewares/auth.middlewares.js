@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { env } from "../config/config.js";
 import { User } from "../models/user.models.js";
 
-export const verifyAuthJwt = async (req, res, next) => {
+export const verifyAuthJwt = async (req, _, next) => {
   const token =
     req?.cookies?.accessToken || req?.headers["Authorization"]?.split(" ")[1];
 

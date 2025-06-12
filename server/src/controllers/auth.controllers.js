@@ -10,9 +10,9 @@ import { isGeneratingAccessAndRefreshToken } from "../utils/access-refresh-token
 import { env } from "../config/config.js";
 import crypto from "crypto";
 import { forgetPasswordCustomMail } from "../utils/mail.js";
-import ImageKit from "imagekit";
 import path from "path";
 import { uploadImageInImagekit } from "../utils/imagekit.io.js";
+import jwt from "jsonwebtoken";
 
 const userRegister = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -218,8 +218,49 @@ const userResendVerifyEmail = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "resend email verification successfully", user));
 });
 
-//* Pending API
-const userRefreshAccessToken = asyncHandler(async (req, res) => {});
+const userRefreshAccessToken = asyncHandler(async (req, res) => {
+  const token = req?.cookies?.refreshToken;
+
+  if (!token) {
+    throw new ApiError(401, "Invalid refresh Token");
+  }
+
+  const decodeRefreshToken = jwt.verify(token, env.refresh_token_key);
+
+  if (!decodeRefreshToken) {
+    throw new ApiError(400, "Unauthorised token");
+  }
+
+  const user = await User.findById(decodeRefreshToken.id);
+
+  if (!user) {
+    throw new ApiError(400, "User not found");
+  }
+
+  if (token !== user?.refreshToken) {
+    throw new ApiError(400, "unauthorised refresh token");
+  }
+
+  const { accessToken, refreshToken } = await isGeneratingAccessAndRefreshToken(
+    decodeRefreshToken.id,
+  );
+
+  if (!accessToken || !refreshToken) {
+    throw new ApiError(400, "Token doesn't generate");
+  }
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+    sameSite: env.node_env !== "development" ? "stric" : "none",
+  };
+
+  res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("accessToken", accessToken, options)
+    .json(200, "new token generate successfully");
+});
 
 const userForgetPasswordRequest = asyncHandler(async (req, res) => {
   const { email } = req.body;
