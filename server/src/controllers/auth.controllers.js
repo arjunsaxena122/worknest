@@ -249,6 +249,9 @@ const userRefreshAccessToken = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Token doesn't generate");
   }
 
+  user.refreshToken = refreshToken;
+  user.save({ validationBeforeSave: false });
+
   const options = {
     httpOnly: true,
     secure: true,
