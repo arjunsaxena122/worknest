@@ -6,7 +6,7 @@ import { ProjectMember } from "../models/projectmember.models.js";
 
 export const verifyAuthJwt = async (req, _, next) => {
   const token =
-    req?.cookies?.accessToken || req?.headers["Authorization"]?.split(" ")[1];
+    req?.cookies?.accessToken || req?.header["Authorization"]?.split(" ")[1];
 
   if (!token) {
     throw new ApiError(401, "unauthorised access");
@@ -18,7 +18,9 @@ export const verifyAuthJwt = async (req, _, next) => {
     throw new ApiError(401, "unauthorised access");
   }
 
-  const user = await User.findById(decodeToken.id);
+  const user = await User.findById(decodeToken.id).select(
+    "-password -refreshToken -forgetPasswordExpiry -forgotPasswordToken",
+  );
 
   if (!user) {
     throw new ApiError(401, "unauthorised access");
@@ -40,8 +42,9 @@ export const verifyRoles =
 
       const project = await ProjectMember.findOne({
         project: pid,
-        user: req?.user?.id,
+        user: req?.user?._id,
       });
+
 
       if (!project) {
         throw new ApiError(400, "Project not found");

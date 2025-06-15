@@ -102,11 +102,17 @@ const userLogin = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Tokens are not generated correctly");
   }
 
-  const options = {
+  const accessOptions = {
     httpOnly: true,
     secure: true,
     sameSite: env.node_env !== "development" ? "strict" : "none",
     maxAge: 1000 * 60 * 30,
+  };
+
+  const refreshOptions = {
+    httpOnly: true,
+    secure: true,
+    sameSite: env.node_env !== "development" ? "strict" : "none",
   };
 
   const loggedInUser = await User.findById(existedUser?._id).select(
@@ -115,8 +121,8 @@ const userLogin = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
+    .cookie("accessToken", accessToken, accessOptions)
+    .cookie("refreshToken", refreshToken, refreshOptions)
     .json(new ApiResponse(200, "Login Successfully", loggedInUser));
 });
 
@@ -133,7 +139,7 @@ const userLogout = asyncHandler(async (req, res) => {
     {
       new: true,
     },
-  ).select("-password");
+  ).select("-password -emailVerificationExpiry -emailVerificationToken");
 
   if (!user) {
     throw new ApiError(401, "user doesn't exist");
@@ -182,7 +188,13 @@ const userVerifyEmail = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, "email verification successfully done"));
+    .json(
+      new ApiResponse(
+        200,
+        "email verification successfully done",
+        user.isEmailVerification,
+      ),
+    );
 });
 
 const userResendVerifyEmail = asyncHandler(async (req, res) => {
@@ -215,14 +227,14 @@ const userResendVerifyEmail = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, "resend email verification successfully", user));
+    .json(new ApiResponse(200, "resend email verification successfully"));
 });
 
 const userRefreshAccessToken = asyncHandler(async (req, res) => {
   const token = req?.cookies?.refreshToken;
 
   if (!token) {
-    throw new ApiError(401, "Invalid refresh Token");
+    throw new ApiError(401, "Please Login!");
   }
 
   const decodeRefreshToken = jwt.verify(token, env.refresh_token_key);
@@ -231,7 +243,9 @@ const userRefreshAccessToken = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Unauthorised token");
   }
 
-  const user = await User.findById(decodeRefreshToken.id);
+  const user = await User.findById(decodeRefreshToken.id).select(
+    "-password -forgetPasswordExpiry -forgotPasswordToken",
+  );
 
   if (!user) {
     throw new ApiError(400, "User not found");
@@ -252,17 +266,24 @@ const userRefreshAccessToken = asyncHandler(async (req, res) => {
   user.refreshToken = refreshToken;
   user.save({ validationBeforeSave: false });
 
-  const options = {
+  const accessOptions = {
     httpOnly: true,
     secure: true,
-    sameSite: env.node_env !== "development" ? "stric" : "none",
+    sameSite: env.node_env !== "development" ? "strict" : "none",
+    maxAge: 1000 * 60,
   };
 
-  res
+  const refreshOptions = {
+    httpOnly: true,
+    secure: true,
+    sameSite: env.node_env !== "development" ? "strict" : "none",
+  };
+
+  return res
     .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("accessToken", accessToken, options)
-    .json(200, "new token generate successfully");
+    .cookie("accessToken", accessToken, accessOptions)
+    .cookie("refreshToken", refreshToken, refreshOptions)
+    .json(new ApiResponse(200, "new token generate successfully"));
 });
 
 const userForgetPasswordRequest = asyncHandler(async (req, res) => {
@@ -290,7 +311,7 @@ const userForgetPasswordRequest = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, "forget password link sent successfully", user));
+    .json(new ApiResponse(200, "forget password link sent successfully"));
 });
 
 const userResetPassword = asyncHandler(async (req, res) => {
@@ -317,6 +338,8 @@ const userResetPassword = asyncHandler(async (req, res) => {
   }
 
   user.password = confirmPassword;
+  user.forgotPasswordToken = null;
+  user.forgetPasswordExpiry = null;
   user.save({ validationBeforeSave: true });
 
   return res
@@ -362,13 +385,17 @@ const userChangePassword = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, "Password changed successfully"));
+    .json(
+      new ApiResponse(200, "Password changed successfully", confirmPassword),
+    );
 });
 
 const userGetMe = asyncHandler(async (req, res) => {
   const { id } = req?.user;
 
-  const user = await User.findById(id).select("-password -refreshToken");
+  const user = await User.findById(id).select(
+    "-password -refreshToken -emailVerificationExpiry -emailVerificationToken",
+  );
 
   if (!user) {
     throw new ApiError(400, "unauthorised access");

@@ -5,6 +5,7 @@ import {
   userGetMe,
   userLogin,
   userLogout,
+  userRefreshAccessToken,
   userRegister,
   userResendVerifyEmail,
   userResetPassword,
@@ -16,6 +17,7 @@ import {
   userLoginValidator,
   userRegisterValidator,
   userChangePasswordValidator,
+  userResetPasswordValidator,
 } from "../validators/auth/auth.validators.js";
 import { verifyAuthJwt } from "../middlewares/auth.middlewares.js";
 import { upload } from "../middlewares/multer.middlewares.js";
@@ -40,9 +42,12 @@ router
   );
 
 router.route("/verify-email/:tokenId").get(userVerifyEmail);
+router.route("/refresh-token").get(userRefreshAccessToken);
 router.route("/resend-email").get(verifyAuthJwt, userResendVerifyEmail);
 router.route("/forget-password").post(userForgetPasswordRequest);
-router.route("/reset-password/:resetId").post(userResetPassword);
+router
+  .route("/reset-password/:resetId")
+  .post(userResetPasswordValidator(), validator, userResetPassword);
 
 router.route("/get-me").get(verifyAuthJwt, userGetMe);
 router
