@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { ProjectNote } from "../models/note.models.js";
 import { ApiError, ApiResponse, asyncHandler } from "../utils/index.js";
 
@@ -5,19 +6,23 @@ const noteAdd = asyncHandler(async (req, res) => {
   const { content } = req.body;
   const { pid } = req.params;
 
+  if (!pid) {
+    throw new ApiError(400, "Id not found");
+  }
+
   if (!content) {
     throw new ApiError(400, "Please fill the required field");
   }
 
-  const addNote = await ProjectNote.create({
+  const note = await ProjectNote.create({
     content,
-    project: pid,
-    user: req?.user?.id,
+    project: new mongoose.Types.ObjectId(pid),
+    createdBy: new mongoose.Types.ObjectId(req?.user?._id),
   });
 
-  const userNote = await ProjectNote.findById(addNote?._id).populate({
-    path: "user",
-    select: "username avatar",
+  const populatedNote = await ProjectNote.findById(note?._id).populate({
+    path: "createdBy",
+    select: "username avatar createdAt",
   });
 
   // const addNote = await ProjectNote.findOneAndUpdate(
@@ -37,17 +42,27 @@ const noteAdd = asyncHandler(async (req, res) => {
   //   },
   // );
 
-  if (!userNote) {
+  if (!populatedNote) {
     throw new ApiError(500, "Internal Server issue, Please retry to add note");
   }
 
   return res
     .status(201)
-    .json(new ApiResponse(201, "note add successfully", userNote));
+    .json(new ApiResponse(201, "note add successfully", populatedNote));
 });
 
 const noteDelete = asyncHandler(async (req, res) => {
   const { nid } = req.params;
+
+  if (!nid) {
+    throw new ApiError(400, "Id not found");
+  }
+
+  const isNoteExist = await ProjectNote.findById(nid);
+
+  if (!isNoteExist) {
+    throw new ApiError(400, "Project note not found");
+  }
 
   const delNote = await ProjectNote.findByIdAndDelete(nid);
 
@@ -64,7 +79,17 @@ const noteUpdate = asyncHandler(async (req, res) => {
   const { nid } = req.params;
   const { content } = req.body;
 
-  const updateNote = await ProjectNote.findOneAndUpdate(
+  if (!nid) {
+    throw new ApiError(400, "Id not found");
+  }
+
+  const isNoteExist = await ProjectNote.findById(nid);
+
+  if (!isNoteExist) {
+    throw new ApiError(400, "Project note not found");
+  }
+
+  const updateNote = await ProjectNote.findByIdAndUpdate(
     nid,
     {
       $set: { content },
@@ -75,7 +100,10 @@ const noteUpdate = asyncHandler(async (req, res) => {
   );
 
   if (!updateNote) {
-    throw new ApiError(400, "Some issue arise with updating note");
+    throw new ApiError(
+      400,
+      "Some issue arise with updating note,Please try again",
+    );
   }
 
   return res
@@ -87,17 +115,17 @@ const getAllNote = asyncHandler(async (req, res) => {
   const { pid } = req.params;
 
   const getProjectNote = await ProjectNote.find({
-    $and: [{ project: pid }, { user: req?.user?.id }],
+    project: new mongoose.Types.ObjectId(pid),
   });
 
   if (!getProjectNote) {
-    throw new ApiError(400, "note doesn't exist");
+    throw new ApiError(400, "Note doesn't exist");
   }
 
   return res
     .status(200)
     .json(
-      new ApiResponse(200, "Get the all note successfully", getProjectNote),
+      new ApiResponse(200, "Fetched all the note successfully", getProjectNote),
     );
 });
 
@@ -107,12 +135,12 @@ const getNoteById = asyncHandler(async (req, res) => {
   const getUserNote = await ProjectNote.findById(nid);
 
   if (!getUserNote) {
-    throw new ApiError(400, "note doesn't exist");
+    throw new ApiError(400, "Note doesn't exist");
   }
 
   return res
     .status(200)
-    .json(new ApiResponse(200, "note found successfully", getUserNote));
+    .json(new ApiResponse(200, "Note found successfully", getUserNote));
 });
 
 export { noteAdd, noteDelete, noteUpdate, getAllNote, getNoteById };

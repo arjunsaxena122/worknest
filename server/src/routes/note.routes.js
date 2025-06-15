@@ -6,14 +6,26 @@ import {
   noteUpdate,
   getNoteById,
 } from "../controllers/note.controllers.js";
-import { verifyAuthJwt } from "../middlewares/auth.middlewares.js";
+import { verifyAuthJwt, verifyRoles } from "../middlewares/auth.middlewares.js";
+import { AvailableUserRoles, UserRolesEnum } from "../utils/constants.js";
 
 const router = Router();
 
-router.route("/create-note/:pid").post(verifyAuthJwt, noteAdd);
-router.route("/delete-note/:nid").delete(verifyAuthJwt, noteDelete);
-router.route("/update-note/:nid").put(verifyAuthJwt, noteUpdate);
-router.route("/get-all-note/:pid").get(verifyAuthJwt, getAllNote);
-router.route("/get-note/:nid").get(verifyAuthJwt, getNoteById);
+router
+  .route("/:pid")
+  .post(verifyAuthJwt, verifyRoles([UserRolesEnum.ADMIN]), noteAdd)
+
+router
+  .route("/:pid/note/:nid")
+  .delete(verifyAuthJwt, verifyRoles([UserRolesEnum.ADMIN]), noteDelete)
+  .put(verifyAuthJwt, verifyRoles([UserRolesEnum.ADMIN]), noteUpdate)
+
+
+router
+  .route("/get-all-note/:pid/note/:nid")
+  .get(verifyAuthJwt, verifyRoles(AvailableUserRoles), getAllNote);
+router
+  .route("/get-note/:pid/note/:nid")
+  .get(verifyAuthJwt, verifyRoles([UserRolesEnum.ADMIN]), getNoteById);
 
 export default router;

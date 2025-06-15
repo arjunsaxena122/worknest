@@ -20,7 +20,7 @@ import { upload } from "./middlewares/multer.middlewares.js";
 app.use("/api/v1/health-check", healthRouter);
 app.use("/api/v1/user", authRouter);
 app.use("/api/v1/project", projectRouter);
-app.use("/api/v1/note", noteRouter);
+app.use("/api/v1/project-note", noteRouter);
 app.use("/api/v1/task", taskRouter);
 
 
