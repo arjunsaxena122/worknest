@@ -4,29 +4,66 @@ import {
   createTask,
   deleteTask,
   delSubTask,
+  getAllSubTask,
   getAllTask,
-  getSubTask,
+  getSubTaskById,
+  getTaskById,
   updateSubTask,
   updateTask,
 } from "../controllers/task.controllers.js";
-import { verifyAuthJwt } from "../middlewares/auth.middlewares.js";
+import { verifyAuthJwt, verifyRoles } from "../middlewares/auth.middlewares.js";
 import { upload } from "../middlewares/multer.middlewares.js";
+import { UserRolesEnum } from "../utils/constants.js";
 
 const router = Router();
 
-router.route("/create-task/:pid").post(verifyAuthJwt, upload.fields("attachment",4) , createTask);
-
-router.route("/delete-task/:tid").delete(verifyAuthJwt, deleteTask);
-
-router.route("/update-task/:tid").put(verifyAuthJwt, updateTask);
-
-router.route("/get-all-task/:pid").get(verifyAuthJwt, getAllTask);
+router
+  .route("/create-task/:pid")
+  .post(
+    verifyAuthJwt,
+    verifyRoles([UserRolesEnum.ADMIN, UserRolesEnum.PROJECT_ADMIN]),
+    upload.array("attachment",3),
+    createTask,
+  );
 
 router
-  .route("/subtask/:tid")
-  .post(createSubTask)
-  .post(updateSubTask)
-  .get(delSubTask)
-  .get(getSubTask);
+  .route("/:pid/t/:tid")
+  .delete(
+    verifyAuthJwt,
+    verifyRoles([UserRolesEnum.ADMIN, UserRolesEnum.PROJECT_ADMIN]),
+    deleteTask,
+  )
+  .put(
+    verifyAuthJwt,
+    verifyRoles([UserRolesEnum.ADMIN, UserRolesEnum.PROJECT_ADMIN]),
+    updateTask,
+  );
+
+router.route("/get-all-task/:pid").get(verifyAuthJwt, getAllTask);
+router.route("/get-task/:tid").get(verifyAuthJwt, getTaskById);
+
+router
+  .route("/:tid/project/:pid")
+  .post(
+    verifyAuthJwt,
+    verifyRoles([UserRolesEnum.ADMIN, UserRolesEnum.PROJECT_ADMIN]),
+    createSubTask,
+  );
+
+router
+  .route("/subtask/:stId/project/:pid")
+  .put(
+    verifyAuthJwt,
+    verifyRoles([UserRolesEnum.ADMIN, UserRolesEnum.PROJECT_ADMIN]),
+    updateSubTask,
+  )
+  .delete(
+    verifyAuthJwt,
+    verifyRoles([UserRolesEnum.ADMIN, UserRolesEnum.PROJECT_ADMIN]),
+    delSubTask,
+  );
+
+router.route("/get-subtask/:stId").get(getSubTaskById);
+router.route("/get-all-subtask/:tid").get(getAllSubTask);
 
 export default router;

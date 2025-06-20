@@ -10,7 +10,7 @@ let imagekit = new ImageKit({
   urlEndpoint: env.urlEndpoint,
 });
 
-const uploadImageInImagekit = async (localPath, id, originalFilename) => {
+const uploadAvatarInImagekit = async (localPath, id, originalFilename) => {
   if (!localPath) return null;
 
   const bufferLocalPath = fs.readFileSync(localPath);
@@ -29,6 +29,7 @@ const uploadImageInImagekit = async (localPath, id, originalFilename) => {
     const image = await imagekit.upload({
       file: bufferLocalPath,
       fileName: `${id}${ext}`,
+      folder: "/avatar",
       overwriteFile: true,
       useUniqueFileName: false,
     });
@@ -45,4 +46,34 @@ const uploadImageInImagekit = async (localPath, id, originalFilename) => {
   }
 };
 
-export { uploadImageInImagekit };
+const uploadAttachmentInImagekit = async (localPath, id, originalFilename) => {
+  if (!localPath) return null;
+
+  const bufferLocalPath = fs.readFileSync(localPath);
+
+  if (!bufferLocalPath) {
+    throw new ApiError(400, "Conversion failed image to buffer");
+  }
+
+  try {
+    const image = await imagekit.upload({
+      file: bufferLocalPath,
+      fileName: `${originalFilename}`,
+      folder: "/attachments",
+      overwriteFile: true,
+      useUniqueFileName: false,
+    });
+
+    if (!image) {
+      throw new ApiError(400, "Image url not generated");
+    }
+
+    fs.unlinkSync(localPath);
+    return image;
+  } catch (err) {
+    fs.unlinkSync(localPath);
+    console.log("ERROR: Uploading file on Imagekit", err);
+  }
+};
+
+export { uploadAvatarInImagekit, uploadAttachmentInImagekit };

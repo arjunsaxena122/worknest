@@ -11,7 +11,7 @@ import { env } from "../config/config.js";
 import crypto from "crypto";
 import { forgetPasswordCustomMail } from "../utils/mail.js";
 import path from "path";
-import { uploadImageInImagekit } from "../utils/imagekit.io.js";
+import { uploadAvatarInImagekit } from "../utils/imagekit.io.js";
 import jwt from "jsonwebtoken";
 
 const userRegister = asyncHandler(async (req, res) => {
@@ -415,7 +415,7 @@ const userUploadAvatar = asyncHandler(async (req, res) => {
 
   const rootPath = path.resolve(getImage.path);
 
-  const afterUploadImage = await uploadImageInImagekit(
+  const afterUploadImage = await uploadAvatarInImagekit(
     rootPath,
     req?.user?.id,
     uploadImage.originalname,

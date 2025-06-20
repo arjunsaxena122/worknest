@@ -5,6 +5,8 @@ import { ProjectNote } from "../models/note.models.js";
 import { ApiError, ApiResponse, asyncHandler } from "../utils/index.js";
 import { User } from "../models/user.models.js";
 import { AvailableUserRoles, UserRolesEnum } from "../utils/constants.js";
+import { Task } from "../models/task.models.js";
+import { SubTask } from "../models/subtask.models.js";
 
 const createProject = asyncHandler(async (req, res) => {
   const { title, description } = req.body;
@@ -90,17 +92,84 @@ const updateProject = asyncHandler(async (req, res) => {
 const deleteProject = asyncHandler(async (req, res) => {
   const { pid } = req.params;
 
-  const project = await Project.findByIdAndDelete(pid);
-  const projectmember = await ProjectMember.findOneAndDelete({
-    $and: [
-      { project: new mongoose.Types.ObjectId(pid) },
-      { user: new mongoose.Types.ObjectId(req?.user?._id) },
-    ],
+  const project = await Project.findById(pid);
+
+  if (!project) {
+    throw new ApiError(400, "Project not found");
+  }
+
+  const projectmember = await ProjectMember.findOne({
+    project: new mongoose.Types.ObjectId(pid),
   });
+
+  if (!projectmember) {
+    throw new ApiError(400, "Project member not found");
+  }
+  const projectnote = await ProjectNote.findOne({
+    project: new mongoose.Types.ObjectId(pid),
+  });
+
+  if (!projectnote) {
+    throw new ApiError(400, "Note not found");
+  }
+  const task = await Task.findOne({
+    project: new mongoose.Types.ObjectId(pid),
+  });
+
+  if (!task) {
+    throw new ApiError(400, "task not found");
+  }
+
+  const subtask = await SubTask.findOne({
+    task: task?._id,
+  });
+
+  if (!subtask) {
+    throw new ApiError(400, "subtask not found");
+  }
+
+  if (!project || !projectmember || !projectnote || !task || !subtask) {
+    throw new ApiError(
+      400,
+      `${project ?? projectmember ?? projectnote ?? task ?? subtask} not found`,
+    );
+  }
+
+  const deletedProject = await Project.findByIdAndDelete(pid);
+
+  const deletedProjectmember = await ProjectMember.findOneAndDelete({
+    project: new mongoose.Types.ObjectId(pid),
+  });
+
+  if (!deletedProjectmember) {
+    throw new ApiError(400, "Project member not deleted yet");
+  }
+
+  const deletedProjectnote = await ProjectNote.findOneAndDelete({
+    project: new mongoose.Types.ObjectId(pid),
+  });
+
+  if (!deletedProjectnote) {
+    throw new ApiError(400, "Project note not deleted yet");
+  }
+
+  const deletedprojectTask = await Task.findOneAndDelete({
+    project: new mongoose.Types.ObjectId(pid),
+  });
+
+  if (!deletedprojectTask) {
+    throw new ApiError(400, "Project task not deleted yet");
+  }
+
+  const deletedprojectsubtask = await SubTask.findOneAndDelete(subtask?._id);
+
+  if (!deletedprojectsubtask) {
+    throw new ApiError(400, "subtask not deleted yet");
+  }
 
   return res.status(200).json(
     new ApiResponse(200, "project deleted successfully", {
-      project,
+      deletedProject,
       projectmember,
     }),
   );
@@ -263,14 +332,13 @@ const getProjectMemberByProjectId = asyncHandler(async (req, res) => {
     project: new mongoose.Types.ObjectId(pid),
   });
 
-  if(!projectmember){
-    throw new ApiError(400,"Project not found")
+  if (!projectmember) {
+    throw new ApiError(400, "Project not found");
   }
 
-  return res.status(200).json(new ApiResponse(200,"Fetched all project member",projectmember))
-
-
-
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Fetched all project member", projectmember));
 });
 
 export {

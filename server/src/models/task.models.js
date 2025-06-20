@@ -18,11 +18,13 @@ const taskSchema = new mongoose.Schema(
       ref: "Project",
       required: true,
     },
-    assignedTo: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User", 
-      required: true,
-    },
+    assignedTo: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+    ],
     assignedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -37,6 +39,7 @@ const taskSchema = new mongoose.Schema(
     attachments: {
       type: [
         {
+          _id: false,
           url: String,
           mimeType: String,
           size: Number,
